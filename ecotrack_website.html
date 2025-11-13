@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoTrack - Environmental Intelligence Platform</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); } 50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.8); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-scan { animation: scan 3s linear infinite; }
+        .animate-glitch { animation: glitch 0.3s infinite; }
+        .animate-slideIn { animation: slideIn 0.6s ease-out forwards; }
+        .terminal-text { text-shadow: 0 0 10px rgba(16, 185, 129, 0.8); }
+        .grid-bg { background-image: linear-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.1) 1px, transparent 1px); background-size: 50px 50px; }
+        .cyber-border { border: 2px solid rgba(16, 185, 129, 0.3); box-shadow: 0 0 20px rgba(16, 185, 129, 0.2), inset 0 0 20px rgba(16, 185, 129, 0.1); }
+        .hologram { background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.1) 50%, rgba(16, 185, 129, 0.05) 100%); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const Icon = ({ d, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <path d={d} />
+            </svg>
+        );
+
+        const Leaf = (props) => <Icon d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" {...props} />;
+        const Globe2 = (props) => <Icon d="M21.54 15H17a2 2 0 0 0-2 2v4.54 M7 3.34V5a3 3 0 0 0 3 3v0a2 2 0 0 1 2 2v0c0 1.1.9 2 2 2v0a2 2 0 0 0 2-2v0c0-1.1.9-2 2-2h3.17 M11 21.95V18a2 2 0 0 0-2-2v0a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05 M12 2a10 10 0 1 0 10 10" {...props} />;
+        const Activity = (props) => <Icon d="M22 12h-4l-3 9L9 3l-3 9H2" {...props} />;
+        const Database = (props) => <Icon d="M21 5c0 1.66-4 3-9 3S3 6.66 3 5m18 0c0-1.66-4-3-9-3S3 3.34 3 5m18 0v14c0 1.66-4 3-9 3s-9-1.34-9-3V5m18 7c0 1.66-4 3-9 3s-9-1.34-9-3" {...props} />;
+        const Cpu = (props) => <Icon d="M4 4h16v16H4z M9 9h6v6H9z M9 2v2m6-2v2M9 20v2m6-2v2M2 9h2m-2 6h2m16-6h2m-2 6h2" {...props} />;
+        const Lock = (props) => <Icon d="M7 11V7a5 5 0 0 1 10 0v4m-12 0h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" {...props} />;
+        const Eye = (props) => <Icon d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z M12 12m-3 0a3 3 0 1 0 6 0 3 3 0 1 0-6 0" {...props} />;
+        const Wind = (props) => <Icon d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" {...props} />;
+        const Droplets = (props) => <Icon d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z m11 0c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19s-2 2.01-2.29 3.76c-.29-1.45-1.14-2.84-2.29-3.76S14 11.1 14 12.25c0 2.22 1.8 4.05 4 4.05z" {...props} />;
+        const TreePine = (props) => <Icon d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14h-.3a1 1 0 0 1-.7-1.7L9 9h-.2A1 1 0 0 1 8 7.3l4-4a1 1 0 0 1 1.4 0l4 4a1 1 0 0 1-.8 1.7H17l3 3.3a1 1 0 0 1-.7 1.7H17z M12 22v-3" {...props} />;
+        const CheckCircle = (props) => <Icon d="M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3" {...props} />;
+        const Info = (props) => <Icon d="M12 12m-10 0a10 10 0 1 0 20 0 10 10 0 1 0-20 0 M12 16v-4m0-4h.01" {...props} />;
+        const Fish = (props) => <Icon d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z M18 12v.5 M16 17.43a17.7 17.7 0 0 1 0-10.86" {...props} />;
+
+        function EcoTrack() {
+            const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+            const [activeView, setActiveView] = useState('customer');
+            const [particles, setParticles] = useState([]);
+            const [aiStatus, setAiStatus] = useState('ANALYZING');
+            const [terminalLines, setTerminalLines] = useState([]);
+            const [selectedImpact, setSelectedImpact] = useState(null);
+
+            useEffect(() => {
+                const handleMouseMove = (e) => {
+                    setMousePos({ x: e.clientX, y: e.clientY });
+                };
+                window.addEventListener('mousemove', handleMouseMove);
+                return () => window.removeEventListener('mousemove', handleMouseMove);
+            }, []);
+
+            useEffect(() => {
+                const newParticles = Array.from({ length: 50 }, (_, i) => ({
+                    id: i,
+                    x: Math.random() * 100,
+                    y: Math.random() * 100,
+                    speed: Math.random() * 2 + 1,
+                    size: Math.random() * 3 + 1
+                }));
+                setParticles(newParticles);
+            }, []);
+
+            useEffect(() => {
+                const messages = [
+                    '[SYSTEM] Initializing EcoTrack Environmental Intelligence...',
+                    '[AI] Loading freshness detection models (TensorFlow 2.14)...',
+                    '[SCAN] Computer vision analyzing 247 inventory items...',
+                    '[DATA] Processing IoT sensor network: temperature, humidity, CO₂...',
+                    '[ML] Training predictive models on 2M+ data points...',
+                    '[OPTIMIZE] Calculating waste reduction strategies...',
+                    '[SUCCESS] System operational - preventing food waste in real-time'
+                ];
+
+                let index = 0;
+                const interval = setInterval(() => {
+                    if (index < messages.length) {
+                        setTerminalLines(prev => [...prev, messages[index]]);
+                        index++;
+                    }
+                }, 800);
+
+                return () => clearInterval(interval);
+            }, []);
+
+            useEffect(() => {
+                const statusCycle = ['ANALYZING', 'OPTIMIZING', 'PREDICTING', 'LEARNING'];
+                let index = 0;
+                const interval = setInterval(() => {
+                    index = (index + 1) % statusCycle.length;
+                    setAiStatus(statusCycle[index]);
+                }, 2000);
+                return () => clearInterval(interval);
+            }, []);
+
+            const Particle = ({ particle }) => (
+                <div
+                    className="absolute rounded-full bg-emerald-400/30 animate-pulse"
+                    style={{
+                        left: `${particle.x}%`,
+                        top: `${particle.y}%`,
+                        width: `${particle.size}px`,
+                        height: `${particle.size}px`,
+                        animation: `float ${particle.speed}s infinite ease-in-out`
+                    }}
+                />
+            );
+
+            const environmentalImpacts = [
+                {
+                    icon: <Wind className="w-8 h-8" />,
+                    title: 'Greenhouse Gas Emissions',
+                    problem: 'Food waste generates 8-10% of global GHG emissions',
+                    solution: 'Our AI prevents waste, reducing 245 tons CO₂ per store annually',
+                    metric: '3.3 Gt CO₂e',
+                    detail: 'If food waste were a country, it would be the 3rd largest emitter after USA and China'
+                },
+                {
+                    icon: <Droplets className="w-8 h-8" />,
+                    title: 'Water Resource Depletion',
+                    problem: '25% of freshwater used globally is wasted on uneaten food',
+                    solution: 'Prevent food waste = save 1.4 billion m³ of water per year',
+                    metric: '250 km³',
+                    detail: 'Equal to 3x the volume of Lake Geneva wasted annually on food we never eat'
+                },
+                {
+                    icon: <TreePine className="w-8 h-8" />,
+                    title: 'Land Use & Deforestation',
+                    problem: '1.4 billion hectares used to produce wasted food',
+                    solution: 'Reducing waste decreases agricultural expansion pressure',
+                    metric: '28% of farmland',
+                    detail: 'Area larger than China devoted to producing food that gets thrown away'
+                },
+                {
+                    icon: <Fish className="w-8 h-8" />,
+                    title: 'Biodiversity Loss',
+                    problem: 'Food production is leading cause of habitat destruction',
+                    solution: 'Less waste = less production = healthier ecosystems',
+                    metric: '60% decline',
+                    detail: 'Wildlife populations declined 60% since 1970, largely due to agriculture'
+                }
+            ];
+
+            return (
+                <div className="bg-black text-emerald-400 min-h-screen overflow-hidden font-mono relative">
+                    <div className="fixed inset-0 pointer-events-none">
+                        {particles.map(particle => (
+                            <Particle key={particle.id} particle={particle} />
+                        ))}
+                    </div>
+
+                    <div className="fixed inset-0 grid-bg opacity-20 pointer-events-none" />
+
+                    <div 
+                        className="fixed w-96 h-96 pointer-events-none transition-all duration-300 ease-out"
+                        style={{
+                            left: mousePos.x - 192,
+                            top: mousePos.y - 192,
+                            background: `radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%)`,
+                        }}
+                    />
+
+                    <div className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-xl border-b border-emerald-500/30">
+                        <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
+                            <div className="flex items-center gap-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                        <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center animate-pulse-glow">
+                                            <Leaf className="w-6 h-6 text-emerald-400" />
+                                        </div>
+                                        <div className="absolute inset-0 bg-emerald-400/20 rounded-lg animate-ping" />
+                                    </div>
+                                    <div>
+                                        <div className="text-emerald-400 font-bold text-lg tracking-wider">ECOTRACK</div>
+                                        <div className="text-emerald-600 text-xs">ENVIRONMENTAL INTELLIGENCE v3.0</div>
+                                    </div>
+                                </div>
+                                
+                                <div className="hidden md:flex items-center gap-4 text-xs">
+                                    <div className="flex items-center gap-2">
+                                        <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
+                                        <span className="text-emerald-400">LIVE</span>
+                                    </div>
+                                    <div className="w-px h-4 bg-emerald-500/30" />
+                                    <div className="flex items-center gap-2">
+                                        <Database className="w-4 h-4 text-emerald-400" />
+                                        <span className="text-emerald-600">247 SENSORS</span>
+                                    </div>
+                                    <div className="w-px h-4 bg-emerald-500/30" />
+                                    <div className="flex items-center gap-2">
+                                        <Cpu className="w-4 h-4 text-emerald-400" />
+                                        <span className="text-emerald-600">AI: {aiStatus}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button className="px-4 py-2 cyber-border rounded-lg text-xs font-bold hover:bg-emerald-500/10 transition-all">
+                                <Lock className="w-4 h-4 inline mr-2" />
+                                SECURE ACCESS
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="pt-24 pb-12">
+                        <section className="relative min-h-screen flex items-center justify-center px-6">
+                            <div className="max-w-7xl mx-auto w-full">
+                                <div className="text-center mb-12">
+                                    <div className="inline-block cyber-border rounded-full px-6 py-2 mb-6 hologram">
+                                        <span className="text-xs font-bold tracking-widest">AI-POWERED FOOD WASTE PREVENTION SYSTEM</span>
+                                    </div>
+                                    <h1 className="text-6xl md:text-8xl font-black mb-4 tracking-tighter">
+                                        <span className="text-emerald-400 terminal-text animate-glitch">ECO</span>
+                                        <span className="text-white">TRACK</span>
+                                    </h1>
+                                    <p className="text-emerald-600 text-xl mb-4">Real-time environmental monitoring & waste reduction platform</p>
+                                    <p className="text-emerald-500 text-sm max-w-3xl mx-auto leading-relaxed">
+                                        Combining computer vision, IoT sensors, and machine learning to prevent food waste at retail stores, 
+                                        reducing environmental impact while improving profitability through intelligent inventory management.
+                                    </p>
+                                </div>
+
+                                <div className="relative flex justify-center mb-12">
+                                    <div className="relative w-96 h-96">
+                                        <div className="absolute inset-0 border-2 border-emerald-500/30 rounded-full animate-spin" style={{ animationDuration: '20s' }} />
+                                        <div className="absolute inset-8 border-2 border-emerald-400/20 rounded-full animate-spin" style={{ animationDuration: '15s', animationDirection: 'reverse' }} />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl animate-pulse" />
+                                        </div>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <Globe2 className="w-32 h-32 text-emerald-400 animate-pulse" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+                                    {[
+                                        { label: 'CO₂ REDUCTION', value: '245', unit: 'TONS/STORE/YR' },
+                                        { label: 'FOOD WASTE CUT', value: '40%', unit: 'AVERAGE' },
+                                        { label: 'WATER SAVED', value: '1.4B', unit: 'LITERS/YR' },
+                                        { label: 'AI ACCURACY', value: '98.7%', unit: 'PREDICTION' }
+                                    ].map((stat, i) => (
+                                        <div key={i} className="cyber-border rounded-lg p-4 hologram hover:bg-emerald-500/10 transition-all">
+                                            <div className="flex items-center gap-2 text-emerald-400 mb-2">
+                                                <span className="text-xs font-bold">{stat.label}</span>
+                                            </div>
+                                            <div className="text-3xl font-black text-white mb-1">{stat.value}</div>
+                                            <div className="text-xs text-emerald-600">{stat.unit}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="py-20 px-6 bg-black/50">
+                            <div className="max-w-7xl mx-auto">
+                                <div className="text-center mb-16">
+                                    <div className="inline-block cyber-border rounded-full px-6 py-2 mb-6 hologram">
+                                        <span className="text-xs font-bold tracking-widest text-red-400">GLOBAL CRISIS</span>
+                                    </div>
+                                    <h2 className="text-5xl font-black mb-6 tracking-tighter">
+                                        <span className="text-white">THE FOOD WASTE</span> <span className="text-emerald-400">EMERGENCY</span>
+                                    </h2>
+                                    <p className="text-emerald-600 text-lg max-w-3xl mx-auto leading-relaxed">
+                                        One-third of all food produced globally is wasted—1.3 billion tons annually. 
+                                        This isn't just inefficient; it's an environmental catastrophe with massive implications for climate, water, and ecosystems.
+                                    </p>
+                                </div>
+
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    {environmentalImpacts.map((impact, i) => (
+                                        <div 
+                                            key={i}
+                                            className={`cyber-border rounded-2xl p-6 hologram cursor-pointer transition-all hover:scale-105 ${
+                                                selectedImpact === i ? 'bg-emerald-500/10' : ''
+                                            }`}
+                                            onClick={() => setSelectedImpact(selectedImpact === i ? null : i)}
+                                        >
+                                            <div className="flex items-start gap-4 mb-4">
+                                                <div className="text-emerald-400 flex-shrink-0">
+                                                    {impact.icon}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h3 className="text-xl font-bold text-white mb-2">{impact.title}</h3>
+                                                    <div className="text-3xl font-black text-emerald-400 mb-2 terminal-text">{impact.metric}</div>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                                                    <div className="text-xs font-bold text-red-400 mb-1">THE PROBLEM</div>
+                                                    <div className="text-sm text-emerald-600">{impact.problem}</div>
+                                                </div>
+                                                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+                                                    <div className="text-xs font-bold text-emerald-400 mb-1">ECOTRACK SOLUTION</div>
+                                                    <div className="text-sm text-emerald-600">{impact.solution}</div>
+                                                </div>
+                                                {selectedImpact === i && (
+                                                    <div className="bg-black/50 rounded-lg p-3 animate-slideIn">
+                                                        <div className="flex items-start gap-2">
+                                                            <Info className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                                                            <div className="text-xs text-emerald-600">{impact.detail}</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="py-20 px-6 bg-black/30">
+                            <div className="max-w-7xl mx-auto">
+                                <div className="text-center mb-12">
+                                    <h2 className="text-4xl font-black mb-4 tracking-tighter">
+                                        <span className="text-white">DUAL</span> <span className="text-emerald-400">INTERFACE SYSTEM</span>
+                                    </h2>
+                                    <p className="text-emerald-600 mb-6">Powerful tools for retailers and seamless experience for customers</p>
+                                    <div className="flex justify-center gap-4">
+                                        <button
+                                            onClick={() => setActiveView('admin')}
+                                            className={`px-8 py-3 rounded-lg font-bold transition-all ${
+                                                activeView === 'admin'
+                                                    ? 'bg-emerald-500 text-black'
+                                                    : 'cyber-border text-emerald-400 hover:bg-emerald-500/10'
+                                            }`}
+                                        >
+                                            STORE ADMINISTRATOR
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveView('customer')}
+                                            className={`px-8 py-3 rounded-lg font-bold transition-all ${
+                                                activeView === 'customer'
+                                                    ? 'bg-emerald-500 text-black'
+                                                    : 'cyber-border text-emerald-400 hover:bg-emerald-500/10'
+                                            }`}
+                                        >
+                                            CUSTOMER PORTAL
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid md:grid-cols-2 gap-8">
+                                    <div className={`cyber-border rounded-2xl p-6 hologram transition-all ${activeView === 'admin' ? 'opacity-100 scale-100' : 'opacity-50 scale-95'}`}>
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="text-xl font-bold text-emerald-400 flex items-center gap-2">
+                                                <Lock className="w-5 h-5" />
+                                                STORE ADMIN DASHBOARD
+                                            </h3>
+                                            <div className="flex gap-1">
+                                                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
+                                                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" style={{ animationDelay: '0.2s' }} />
+                                                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" style={{ animationDelay: '0.4s' }} />
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-black rounded-lg p-4 mb-4 h-64 overflow-y-auto font-mono text-xs">
+                                            <div className="text-emerald-600 mb-2">administrator@ecotrack-store</div>
+                                            {terminalLines.map((line, i) => (
+                                                <div key={i} className="text-emerald-400 mb-1 terminal-text">
+                                                    {line}
+                                                </div>
+                                            ))}
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <span className="text-emerald-400">$</span>
+                                                <div className="w-2 h-4 bg-emerald-400 animate-pulse" />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {[
+                                                'Real-time inventory freshness monitoring',
+                                                'Automated dynamic pricing based on shelf life',
+                                                'Predictive waste alerts & recommendations',
+                                                'Supply chain optimization insights',
+                                                'Environmental impact reporting',
+                                                'Revenue optimization through ML forecasting'
+                                            ].map((feature, i) => (
+                                                <div key={i} className="flex items-center gap-2 text-xs">
+                                                    <CheckCircle className="w-3 h-3 text-emerald-400" />
+                                                    <span className="text-emerald-600">{feature}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <button className="w-full mt-4 px-6 py-3 bg-emerald-500 text-black rounded-lg font-bold hover:bg-emerald-400 transition-all">
+                                            ACCESS ADMIN PORTAL
+                                        </button>
+                                    </div>
+
+                                    <div className={`cyber-border rounded-2xl p-6 hologram transition-all ${activeView === 'customer' ? 'opacity-100 scale-100' : 'opacity-50 scale-95'}`}>
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="text-xl font-bold text-emerald-400 flex items-center gap-2">
+                                                <Eye className="w-5 h-5" />
+                                                CUSTOMER APP
+                                            </h3>
+                                            <div className="flex gap-1">
+                                                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
+                                                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" style={{ animationDelay: '0.2s' }} />
+                                                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" style={{ animationDelay: '0.4s' }} />
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-black rounded-lg p-4 mb-4 h-64 overflow-y-auto font-mono text-xs">
+                                            <div className="text-emerald-600 mb-2">customer@ecotrack-app</div>
+                                            {[
+                                                '[SYNC] Smart shopping list updated',
+                                                '[DEALS] 15 discounted items available',
+                                                '[SAVE] Weekly score: +$23.50 saved',
+                                                '[TIPS] Recipe suggestions ready',
+                                                '[IMPACT] Prevented 4.2kg waste this month',
+                                                '[REWARD] Earned 450 EcoPoints',
+                                                '[ALERT] Favorites at 30% off',
+                                                '[READY] Login to access recommendations'
+                                            ].map((line, i) => (
+                                                <div key={i} className="text-emerald-400 mb-1 terminal-text">
+                                                    {line}
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {[
+                                                'AI-powered shopping recommendations',
+                                                'Real-time discount alerts',
+                                                'EcoPoints rewards program',
+                                                'Recipe suggestions',
+                                                'Environmental impact tracking',
+                                                'Sustainability goals'
+                                            ].map((feature, i) => (
+                                                <div key={i} className="flex items-center gap-2 text-xs bg-black/30 rounded p-2">
+                                                    <CheckCircle className="w-3 h-3 text-emerald-400" />
+                                                    <span className="text-emerald-600">{feature}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <button className="w-full mt-4 px-6 py-3 cyber-border rounded-lg font-bold hover:bg-emerald-500/10 transition-all">
+                                            DOWNLOAD CUSTOMER APP
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="py-20 px-6">
+                            <div className="max-w-5xl mx-auto">
+                                <div className="text-center mb-12">
+                                    <div className="inline-block cyber-border rounded-full px-6 py-2 mb-6 hologram">
+                                        <span className="text-xs font-bold tracking-widest">INNOVATION TEAM</span>
+                                    </div>
+                                    <h2 className="text-4xl font-black mb-4 tracking-tighter">
+                                        <span className="text-white">SYSTEM</span> <span className="text-emerald-400">CREATORS</span>
+                                    </h2>
+                                    <p className="text-emerald-600">Designed and developed by passionate technologists committed to environmental sustainability</p>
+                                </div>
+
+                                <div className="cyber-border rounded-2xl p-8 hologram">
+                                    <div className="grid md:grid-cols-2 gap-8 mb-8">
+                                        <div className="text-center">
+                                            <div className="relative inline-block mb-4">
+                                                <div className="w-40 h-40 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl flex items-center justify-center text-5xl font-black animate-pulse-glow">
+                                                    AC
+                                                </div>
+                                                <div className="absolute -inset-2 border-2 border-emerald-400/30 rounded-2xl animate-spin" style={{ animationDuration: '8s' }} />
+                                            </div>
+                                            <h3 className="text-3xl font-bold mb-2 text-white">Arnav Chintakayala</h3>
+                                            <p className="text-emerald-400 font-bold mb-3 text-lg">LEAD ENGINEER & AI ARCHITECT</p>
+                                            <div className="text-sm text-emerald-600 space-y-2">
+                                                <div>→ Full-stack development & system architecture</div>
+                                                <div>→ Machine learning model design & training</div>
+                                                <div>→ Real-time data pipeline engineering</div>
+                                                <div>→ Computer vision implementation</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="text-center">
+                                            <div className="relative inline-block mb-4">
+                                                <div className="w-40 h-40 bg-gradient-to-br from-teal-500 to-cyan-700 rounded-2xl flex items-center justify-center text-5xl font-black animate-pulse-glow">
+                                                    SP
+                                                </div>
+                                                <div className="absolute -inset-2 border-2 border-teal-400/30 rounded-2xl animate-spin" style={{ animationDuration: '8s', animationDirection: 'reverse' }} />
+                                            </div>
+                                            <h3 className="text-3xl font-bold mb-2 text-white">Sajni Patel</h3>
+                                            <p className="text-teal-400 font-bold mb-3 text-lg">UX DESIGNER & FRONTEND ENGINEER</p>
+                                            <div className="text-sm text-emerald-600 space-y-2">
+                                                <div>→ User experience design & research</div>
+                                                <div>→ Interface development & interaction design</div>
+                                                <div>→ Data visualization & analytics dashboards</div>
+                                                <div>→ Customer journey optimization</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-emerald-500/20 pt-6">
+                                        <h4 className="text-center text-sm font-bold text-emerald-400 mb-4">MISSION & VISION</h4>
+                                        <p className="text-center text-emerald-600 leading-relaxed max-w-3xl mx-auto">
+                                            We believe technology should serve humanity's greatest challenges. EcoTrack was born from the conviction that 
+                                            artificial intelligence and real-time data can transform one of the world's most pressing environmental crises—food waste. 
+                                            By combining computer vision, predictive analytics, and IoT sensors, we're creating a future where every store operates 
+                                            at maximum efficiency, every customer makes sustainable choices, and food waste becomes a relic of the past.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="py-20 px-6">
+                            <div className="max-w-4xl mx-auto text-center">
+                                <div className="cyber-border rounded-3xl p-12 hologram relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent" />
+                                    <div className="relative">
+                                        <div className="inline-block cyber-border rounded-full px-6 py-2 mb-6 bg-black">
+                                            <span className="text-xs font-bold tracking-widest text-emerald-400">START YOUR SUSTAINABILITY JOURNEY</span>
+                                        </div>
+                                        <h2 className="text-5xl font-black mb-6 tracking-tighter">
+                                            <span className="text-white">TRANSFORM YOUR STORE</span>
+                                            <br />
+                                            <span className="text-emerald-400 terminal-text">SAVE THE PLANET</span>
+                                        </h2>
+                                        <p className="text-xl text-emerald-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+                                            Join the movement to eliminate food waste. Deploy cutting-edge AI and IoT technology 
+                                            to reduce environmental impact, increase profitability, and create a sustainable future.
+                                        </p>
+                                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                            <button className="px-10 py-5 bg-emerald-500 text-black rounded-lg font-black text-lg hover:bg-emerald-400 transition-all hover:scale-105">
+                                                REQUEST DEMO
+                                            </button>
+                                            <button className="px-10 py-5 cyber-border rounded-lg font-black text-lg hover:bg-emerald-500/10 transition-all">
+                                                VIEW TECHNICAL DOCS
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <footer className="border-t border-emerald-500/20 py-12 px-6">
+                        <div className="max-w-7xl mx-auto text-center">
+                            <div className="flex items-center justify-center gap-3 mb-6">
+                                <Leaf className="w-8 h-8 text-emerald-400" />
+                                <span className="text-2xl font-bold text-emerald-400">ECOTRACK</span>
+                            </div>
+                            <p className="text-emerald-600 text-sm mb-6">
+                                AI-powered environmental intelligence platform eliminating food waste through real-time monitoring and predictive analytics.
+                            </p>
+                            <div className="text-sm text-emerald-600 mb-4">
+                                © 2024 EcoTrack Environmental Intelligence Platform. All rights reserved.
+                            </div>
+                            <div className="flex items-center justify-center gap-2 text-sm mb-4">
+                                <span className="text-emerald-600">Created by</span>
+                                <span className="text-emerald-400 font-bold">Arnav Chintakayala</span>
+                                <span className="text-emerald-600">&</span>
+                                <span className="text-emerald-400 font-bold">Sajni Patel</span>
+                            </div>
+                            <div className="text-xs text-emerald-600 mb-2">
+                                Powered by React, TensorFlow, Python, OpenAI, Next.js & Vercel
+                            </div>
+                            <div className="text-xs text-emerald-600">
+                                Combining computer vision, IoT sensors, and machine learning to prevent food waste and protect our planet
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<EcoTrack />, document.getElementById('root'));
+    </script>
+
+</body>
+</html>
